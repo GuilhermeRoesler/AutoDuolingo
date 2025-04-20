@@ -71,6 +71,11 @@ class Duolingo:
             else:
                 self.logger.info("✅ Login automático funcionou!")
             
+            # Verifica se há notificações
+            if self.page.locator("[data-test='notification-button']").is_visible():
+                self.logger.warning("⚠️ Há notificações. Clique em 'OK' para continuar.")
+                self.page.locator("[data-test='notification-button']").click()
+            
             return True
         except Exception as e:
             self.logger.error(f"Erro ao navegar para o Duolingo: {e}")
@@ -95,35 +100,59 @@ class Duolingo:
             self.logger.info("Botão 'next' encontrado. Iniciando o loop de lição...")
             
             answer_index = 0
+            speak_exercise_yet = False
             while True:
                 # Verifica se o botão 'next' ainda está visível
                 if not self.page.locator("[data-test='player-next']").is_visible(timeout=10000):
                     self.logger.info("Botão 'next' não está mais visível. Lição concluída!")
                     break
                 
-                # Verifica se o exercício é normal
-                # if self.page.get_by_role("radio").nth(0).is_visible():
-                # if self.page.get_by_text("O que você escuta?").is_visible() or self.page.get_by_text("Ouça e responda:").is_visible():
-                if self.page.query_selector('div._308fG._1vQbM._1iLiY[aria-label="choice"]') or self.page.query_selector('div.PaKCO._1vQbM[aria-label="choice"]'):
+                if self.page.get_by_text("O que você escuta?").last.is_visible():
+                    print('GAY1')
                     self.handle_normal_exercise(answer_index)
                     continue
                 
-                # Verifica se o exercício é de fala
-                if self.page.get_by_role("button", name="Clique para falar").is_visible(timeout=10000):
+                if self.page.get_by_text("Ouça e responda:").last.is_visible():
+                    print('GAY2')
+                    self.handle_normal_exercise(answer_index)
+                    continue
+                
+                if self.page.get_by_text("Fale esta frase:").is_visible() and not speak_exercise_yet:
+                    print('GAY3')
+                    answer_index = 1
+                    speak_exercise_yet = True
                     self.handle_speaking_exercise()
                     continue
                 
-                # Verifica se o exercício é especial
-                # if self.page.get_by_role("button", name="4").is_visible(timeout=10000):
-                # if self.page.get_by_text("Combine os pares:").is_visible():
-                if self.page.query_selector('div._2P2RV._1bmNz._3rat3'):
-                    self.handle_especial_exercise()
+                if self.page.get_by_role("button", name="4").is_visible():
+                    print('GAY4')
                     answer_index = 1
+                    self.handle_especial_exercise()
                     continue
                 
                 self.finish_lesson()
                 break
-            
+                
+                # # Verifica se o exercício é normal
+                # # if self.page.get_by_text("O que você escuta?").is_visible() or self.page.get_by_text("Ouça e responda:").is_visible():
+                # # if self.page.query_selector('div._308fG._1vQbM._1iLiY[aria-label="choice"]') or self.page.query_selector('div.PaKCO._1vQbM[aria-label="choice"]'):
+                # if self.page.get_by_role("radio").nth(0).is_visible():
+                #     self.handle_normal_exercise(answer_index)
+                #     continue
+                
+                # # Verifica se o exercício é de fala
+                # if self.page.get_by_role("button", name="Clique para falar").is_visible(timeout=10000):
+                #     self.handle_speaking_exercise()
+                #     continue
+                
+                # # Verifica se o exercício é especial
+                # # if self.page.query_selector('div._2P2RV._1bmNz._3rat3'):
+                # if self.page.get_by_text("Combine os pares:").is_visible():
+                #     self.logger.info("Exercício especial encontrado. Pulandu...")
+                # if self.page.get_by_role("button", name="4").is_visible(timeout=10000):
+                #     self.handle_especial_exercise()
+                #     answer_index = 1
+                #     continue
             return True
         except PlaywrightTimeoutError:
             self.logger.error("Timeout esperando pelo botão 'next'")
